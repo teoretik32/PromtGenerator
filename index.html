@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎴 Prompt Generator</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0b0b18;--card:#141428;--card-border:#1e1e3a;--tag-bg:#1a1a34;--tag-border:#2a2a50;--accent:#ff6b9d;--accent2:#c44dff;--cyan:#00d4ff;--text:#d0d0e0;--muted:#555}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:60px}
+.header{text-align:center;padding:28px 20px 18px;background:linear-gradient(180deg,#160a28 0%,var(--bg) 100%)}
+.header h1{font-size:1.9em;background:linear-gradient(135deg,var(--accent),var(--accent2),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:6px}
+.header p{color:#777;font-size:.9em}
+
+.prompt-output{position:sticky;top:0;z-index:100;background:rgba(12,12,24,.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,107,157,.15);padding:14px 20px}
+.prompt-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px}
+.prompt-bar-left{display:flex;align-items:center;gap:10px}
+.prompt-label{font-size:.8em;color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.char-count{font-size:.75em;color:var(--muted)}
+.prompt-actions{display:flex;gap:6px}
+.btn{padding:6px 15px;border:none;border-radius:6px;cursor:pointer;font-size:.82em;font-weight:600;transition:all .2s;font-family:inherit}
+.btn-copy{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+.btn-copy:hover{transform:scale(1.04);box-shadow:0 0 18px rgba(255,107,157,.35)}
+.btn-reset{background:rgba(255,255,255,.08);color:#999}
+.btn-reset:hover{background:rgba(255,60,60,.15);color:#ff6b6b}
+.btn-random{background:rgba(0,212,255,.12);color:var(--cyan);border:1px solid rgba(0,212,255,.25)}
+.btn-random:hover{background:rgba(0,212,255,.2);box-shadow:0 0 12px rgba(0,212,255,.2)}
+.prompt-text{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:11px 13px;min-height:50px;max-height:140px;overflow-y:auto;font-family:Consolas,Monaco,'Courier New',monospace;font-size:.83em;line-height:1.55;color:#c8c8d8;word-break:break-word}
+.prompt-text::-webkit-scrollbar{width:5px}
+.prompt-text::-webkit-scrollbar-thumb{background:rgba(255,107,157,.3);border-radius:3px}
+.sep{color:var(--accent);font-weight:700}
+.prompt-empty{color:var(--muted);font-style:italic;font-family:inherit}
+
+.main{max-width:880px;margin:0 auto;padding:16px}
+.section{background:var(--card);border:1px solid var(--card-border);border-radius:11px;padding:16px 16px 14px;margin-bottom:10px}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.section-title{font-size:.95em;font-weight:600;color:#fff}
+.section-badge{font-size:.65em;color:var(--muted);background:rgba(255,255,255,.05);padding:2px 8px;border-radius:4px}
+.tags{display:flex;flex-wrap:wrap;gap:7px}
+.tag{padding:6px 13px;border-radius:18px;border:1px solid var(--tag-border);background:var(--tag-bg);color:#aaa;font-size:.83em;cursor:pointer;transition:all .18s;user-select:none;white-space:nowrap}
+.tag:hover{border-color:rgba(255,107,157,.35);background:rgba(255,107,157,.08);color:#ddd}
+.tag.on{background:linear-gradient(135deg,rgba(255,107,157,.2),rgba(196,77,255,.18));border-color:var(--accent);color:#fff;box-shadow:0 0 10px rgba(255,107,157,.15)}
+
+.presets-wrap{display:flex;flex-wrap:wrap;gap:7px}
+.preset{padding:7px 15px;border-radius:8px;border:1px solid rgba(0,212,255,.25);background:rgba(0,212,255,.06);color:var(--cyan);font-size:.83em;cursor:pointer;transition:all .2s;font-family:inherit}
+.preset:hover{background:rgba(0,212,255,.14);border-color:var(--cyan);box-shadow:0 0 14px rgba(0,212,255,.15)}
+
+.custom-input{width:100%;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:10px 13px;color:var(--text);font-size:.88em;font-family:inherit;resize:vertical;min-height:38px}
+.custom-input:focus{outline:none;border-color:rgba(255,107,157,.35)}
+.custom-input::placeholder{color:var(--muted)}
+
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;padding:11px 22px;border-radius:8px;font-weight:600;font-size:.9em;opacity:0;transition:all .3s;z-index:999;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+@media(max-width:600px){
+.header h1{font-size:1.4em}
+.main{padding:10px}
+.section{padding:13px 12px 11px}
+.tag{font-size:.78em;padding:5px 11px}
+.prompt-output{padding:10px 14px}
+.prompt-text{font-size:.78em;max-height:110px}
+.prompt-bar{flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+<h1>🎴 Tokyo Street Prompt Generator</h1>
+<p>Собери промпт для AI-генерации • Кликай теги • Копируй результат</p>
+</div>
+
+<div class="prompt-output">
+<div class="prompt-bar">
+<div class="prompt-bar-left">
+<span class="prompt-label">📋 Промпт</span>
+<span class="char-count" id="charCount"></span>
+</div>
+<div class="prompt-actions">
+<button class="btn btn-random" onclick="randomize()">🎲 Рандом</button>
+<button class="btn btn-reset" onclick="resetAll()">✕ Сброс</button>
+<button class="btn btn-copy" onclick="copyPrompt()">📋 Копировать</button>
+</div>
+</div>
+<div class="prompt-text" id="promptText"><span class="prompt-empty">← Выбери теги ниже чтобы собрать промпт…</span></div>
+</div>
+
+<div class="main" id="main"></div>
+
+<div class="toast" id="toast">✅ Скопировано!</div>
+
+<script>
+const S=[
+{id:'camera',title:'📷 Камера и стиль фото',mode:'s',tags:[
+{l:'Canon 85mm f/1.4',p:'shot on Canon EOS 5D Mark IV with 85mm f/1.4 lens, shallow depth of field'},
+{l:'Canon 50mm f/1.2',p:'shot on Canon EOS R5 with 50mm f/1.2 lens, creamy bokeh'},
+{l:'Sony A7III 35mm',p:'shot on Sony A7III with 35mm f/1.4 lens, cinematic look'},
+{l:'iPhone 15 Pro',p:'iPhone 15 Pro photo, natural smartphone snapshot, slight lens distortion, RAW look'},
+{l:'Fujifilm X-T5',p:'shot on Fujifilm X-T5, Fujifilm color science, film simulation'},
+{l:'Плёнка Kodak',p:'vintage analog film, Kodak Portra 400, natural film grain, warm tones'},
+{l:'Lomography',p:'Lomography style, vivid colors, light leaks, vignette'},
+{l:'Плёнка Cinestill',p:'Cinestill 800T film, tungsten-balanced, halation glow around lights'}
+]},
+{id:'shot',title:'🎯 Тип кадра',mode:'s',tags:[
+{l:'Экстремальный крупный план',p:'extreme close-up, face details filling frame'},
+{l:'Крупный план лица',p:'close-up portrait, face and neck'},
+{l:'По грудь',p:'bust shot, head and shoulders'},
+{l:'По пояс',p:'medium shot, waist-up framing'},
+{l:'По колено (ковбойский)',p:'cowboy shot, knee-up framing'},
+{l:'В полный рост',p:'full body shot, head to toe visible'},
+{l:'Общий план с окружением',p:'wide environmental portrait, full body with surroundings'},
+{l:'Со спины',p:'rear view shot, seen from behind'}
+]},
+{id:'quality',title:'✨ Качество и реализм',mode:'m',tags:[
+{l:'Фотореализм',p:'photorealistic'},
+{l:'Гиперреализм',p:'hyperrealistic'},
+{l:'8K UHD',p:'8K UHD resolution'},
+{l:'Текстура кожи',p:'realistic skin texture, visible pores'},
+{l:'Без AI-артефактов',p:'no AI artifacts, no illustration'},
+{l:'Зернистость плёнки',p:'subtle film grain'},
+{l:'Красивое боке',p:'beautiful bokeh background'},
+{l:'RAW фото',p:'RAW unprocessed photo look'},
+{l:'Резкий фокус',p:'tack sharp focus on subject'},
+{l:'Высокая детализация',p:'extremely detailed, intricate details'},
+{l:'Кинематографично',p:'cinematic color grading, movie still'}
+]},
+{id:'age',title:'👤 Персонаж и возраст',mode:'s',tags:[
+{l:'18–20 лет',p:'young Japanese woman, 19 years old, Asian features'},
+{l:'20–25 лет',p:'young Japanese woman, 23 years old, Asian features'},
+{l:'25–30 лет',p:'Japanese woman, 27 years old, Asian features'},
+{l:'30–35 лет',p:'Japanese woman, 32 years old, Asian features, mature beauty'}
+]},
+{id:'body',title:'🏋️ Тип тела',mode:'s',tags:[
+{l:'Стройная / худая',p:'slim petite body, slender waist, delicate frame, low body fat'},
+{l:'С формами (песочные часы)',p:'curvy voluptuous figure, hourglass shape, full bust and hips, defined waist'},
+{l:'Спортивная / подтянутая',p:'athletic toned body, fit physique, lean muscle definition'},
+{l:'Миниатюрная',p:'petite small frame, cute compact proportions'},
+{l:'Средняя / обычная',p:'average build, natural balanced proportions'},
+{l:'Пышная',p:'full-figured body, soft generous curves, plus-size beauty'},
+{l:'Грушевидная (широкие бёдра)',p:'pear-shaped body, wider hips, narrow shoulders, shapely legs'},
+{l:'Длинноногая модельная',p:'tall model proportions, long legs, elongated slender frame'}
+]},
+{id:'hair',title:'💇 Волосы',mode:'s',tags:[
+{l:'Длинные прямые чёрные',p:'long straight black hair'},
+{l:'Каре (боб)',p:'black bob cut hair, clean lines'},
+{l:'Хвост',p:'black hair in high ponytail'},
+{l:'Волнистые длинные',p:'long wavy flowing dark hair'},
+{l:'Короткая стрижка',p:'short pixie cut black hair'},
+{l:'Прямые с чёлкой',p:'straight black hair with blunt bangs'},
+{l:'Каштановые крашеные',p:'dyed warm chestnut brown hair'},
+{l:'Мелирование',p:'black hair with caramel highlights'},
+{l:'Пучок (небрежный)',p:'messy bun hairstyle, loose strands'},
+{l:'Два хвостика',p:'twintails hairstyle, playful'},
+{l:'Распущенные за плечи',p:'hair flowing over shoulders, wind-swept'},
+{l:'Рыжие / медные',p:'dyed copper red hair, vibrant'}
+]},
+{id:'makeup',title:'💄 Макияж',mode:'s',tags:[
+{l:'Естественный / нюд',p:'subtle natural makeup, light foundation, nude lips'},
+{l:'Яркий (красная помада)',p:'bold makeup, red lipstick, defined eyeliner, contoured'},
+{l:'Без макияжа',p:'no makeup, bare natural face, clean skin'},
+{l:'Смоки айс',p:'smoky eye makeup, dark dramatic eyeshadow'},
+{l:'K-beauty / стеклянная кожа',p:'Korean dewy makeup, glass skin effect, gradient lips, blush'},
+{l:'Гламурный',p:'glamorous makeup, shimmering eyeshadow, glossy full lips'},
+{l:'Гяру / Gyaru',p:'gyaru style makeup, big eyes, circle lenses, dramatic lashes'}
+]},
+{id:'expression',title:'😊 Выражение лица и взгляд',mode:'m',tags:[
+{l:'Лёгкая улыбка',p:'gentle subtle smile'},
+{l:'Серьёзное',p:'serious stoic expression'},
+{l:'Уверенное',p:'confident self-assured look'},
+{l:'Задумчивое',p:'pensive thoughtful expression'},
+{l:'Дерзкое / провокационное',p:'bold provocative gaze'},
+{l:'Скучающее',p:'bored indifferent expression'},
+{l:'Грустное / меланхолия',p:'melancholic sad expression, distant eyes'},
+{l:'Игривое',p:'playful teasing expression, mischievous smile'},
+{l:'Смотрит в камеру',p:'looking directly at viewer, eye contact'},
+{l:'Смотрит в сторону',p:'looking away, candid unaware moment'},
+{l:'Взгляд через плечо',p:'looking over shoulder at camera'},
+{l:'Смотрит вниз',p:'looking down, eyes lowered, shy'},
+{l:'Прикрытые глаза',p:'half-closed eyes, sultry dreamy look'}
+]},
+{id:'clothing',title:'👗 Одежда (выбери несколько)',mode:'m',tags:[
+{l:'Белая футболка',p:'white t-shirt'},
+{l:'Чёрная футболка',p:'black t-shirt'},
+{l:'Кроп-топ',p:'crop top showing midriff'},
+{l:'Оверсайз свитер',p:'oversized chunky knit sweater'},
+{l:'Блузка',p:'elegant sheer blouse'},
+{l:'Топ на бретельках',p:'spaghetti strap camisole'},
+{l:'Худи',p:'casual hoodie'},
+{l:'Бюстье / корсет',p:'corset top, structured'},
+{l:'Джинсовая куртка',p:'denim jacket'},
+{l:'Кожаная куртка',p:'black leather biker jacket'},
+{l:'Бомбер',p:'bomber jacket'},
+{l:'Кардиган',p:'open knit cardigan'},
+{l:'Тренч',p:'beige trench coat'},
+{l:'Мини-юбка',p:'mini skirt'},
+{l:'Юбка в клетку',p:'plaid pleated school skirt'},
+{l:'Джинсы скинни',p:'skinny jeans'},
+{l:'Рваные джинсы',p:'ripped distressed jeans'},
+{l:'Широкие брюки',p:'wide-leg high-waist trousers'},
+{l:'Шорты',p:'denim shorts'},
+{l:'Леггинсы',p:'black leggings'},
+{l:'Мини-платье',p:'tight mini dress'},
+{l:'Боди-кон платье',p:'bodycon dress'},
+{l:'Сарафан',p:'sundress'},
+{l:'Сетчатые колготки',p:'fishnet stockings'},
+{l:'Off-shoulder топ',p:'off-shoulder top, bare shoulders'}
+]},
+{id:'shoes',title:'👠 Обувь',mode:'s',tags:[
+{l:'Белые кроссовки',p:'white sneakers'},
+{l:'Чёрные ботинки',p:'black ankle boots'},
+{l:'Высокие каблуки',p:'high heels, stilettos'},
+{l:'Сандалии',p:'strappy sandals'},
+{l:'Платформы',p:'chunky platform shoes'},
+{l:'Лоферы',p:'leather loafers'},
+{l:'Кеды Converse',p:'canvas Converse sneakers'},
+{l:'Сапоги до колена',p:'knee-high boots'}
+]},
+{id:'accessories',title:'💍 Аксессуары (выбери несколько)',mode:'m',tags:[
+{l:'Маленькая сумка',p:'small handbag'},
+{l:'Серьги',p:'delicate earrings'},
+{l:'Ожерелье',p:'pendant necklace'},
+{l:'Чокер',p:'choker necklace'},
+{l:'Кепка',p:'baseball cap'},
+{l:'Шарф / платок',p:'light scarf'},
+{l:'Солнечные очки',p:'sunglasses pushed up on head'},
+{l:'Браслеты',p:'stacked bracelets'},
+{l:'Кольца',p:'rings on fingers'},
+{l:'Белые носочки',p:'white ankle socks'},
+{l:'Наушники',p:'headphones around neck'},
+{l:'Телефон в руке',p:'holding smartphone'},
+{l:'Сигарета',p:'cigarette in hand, smoke wisps'},
+{l:'Маска на подбородке',p:'face mask pulled down to chin'}
+]},
+{id:'pose',title:'🧍 Поза',mode:'s',tags:[
+{l:'Стоит расслабленно',p:'relaxed standing pose, weight on one leg, natural posture'},
+{l:'Руки в карманах',p:'hands in pockets, nonchalant casual stance'},
+{l:'Три четверти поворот',p:'three-quarter pose, body slightly turned, dynamic angle'},
+{l:'Облокотилась на стену',p:'leaning against wall, one foot up, relaxed cool pose'},
+{l:'Сидит на скамейке',p:'sitting on bench, legs crossed casually'},
+{l:'Сидит на корточках',p:'squatting down on curb, urban crouch pose'},
+{l:'Идёт (на ходу)',p:'walking pose, mid-stride, candid movement, motion blur on legs'},
+{l:'Руки скрещены',p:'arms crossed, confident assertive stance'},
+{l:'Поправляет волосы',p:'hand running through hair, natural gesture'},
+{l:'Руки за спиной',p:'hands clasped behind back, open posture'},
+{l:'Смотрит в телефон',p:'looking down at phone, modern candid pose'},
+{l:'Опирается на перила',p:'leaning on railing, casual slouch'},
+{l:'Поза модели',p:'fashion model pose, hand on hip, elongated neck'},
+{l:'Спиной к камере, полуоборот',p:'back to camera, looking over shoulder, mysterious'}
+]},
+{id:'location',title:'📍 Локация',mode:'s',tags:[
+{l:'Kabukicho (неоновые переулки)',p:'Kabukicho district Tokyo, neon-lit narrow alleys, glowing Japanese signs, bustling nightlife area'},
+{l:'Okubo Park (тёмный парк)',p:'Okubo Park at night, dimly lit park paths, trees and shadows, quiet secluded atmosphere'},
+{l:'Неоновая улица Токио',p:'Tokyo neon street, dense colorful neon signs overhead, vibrant urban canyon'},
+{l:'Тихий задний переулок',p:'quiet Tokyo back alley, minimal dim lighting, intimate claustrophobic space'},
+{l:'Перекрёсток Shibuya-стиль',p:'busy Tokyo intersection, Shibuya-style pedestrian crossing, crowd motion'},
+{l:'У светящейся витрины',p:'standing near illuminated shop window, warm light spilling out onto sidewalk'},
+{l:'Пустая парковка ночью',p:'empty parking lot at night, harsh fluorescent overhead lighting, urban isolation'},
+{l:'Под эстакадой',p:'under Tokyo highway overpass, concrete pillars, scattered neon reflections'},
+{l:'Конбини (7-Eleven)',p:'outside glowing convenience store at night, 7-Eleven light, mundane urban'},
+{l:'Лестница / ступеньки',p:'sitting on concrete steps, urban stairway, low angle'},
+{l:'Love hotel район',p:'love hotel district, gaudy colorful facades, pink and purple signage'},
+{l:'Крыша здания',p:'Tokyo rooftop at night, city skyline in background, wind'}
+]},
+{id:'scene',title:'🎬 Детали сцены и атмосфера',mode:'m',tags:[
+{l:'Мокрый асфальт',p:'wet pavement, rain-slicked ground, reflections'},
+{l:'Размытая толпа на фоне',p:'blurred pedestrians in background, busy street life'},
+{l:'Отражения неона',p:'neon reflections on surfaces, colorful light pools'},
+{l:'Пар / дымка',p:'atmospheric haze, misty air, steam rising from grates'},
+{l:'Дождь',p:'light rain falling, raindrops visible, umbrellas'},
+{l:'Вендинговые автоматы',p:'glowing vending machines nearby, Japanese text'},
+{l:'Мусор / гранж',p:'urban grit, trash bags on curb, raw city texture'},
+{l:'Одинокая фигура',p:'solitary figure, alone in the city, isolated mood'},
+{l:'Тени и контраст',p:'dramatic shadows, high contrast, chiaroscuro lighting'},
+{l:'Боке огней на фоне',p:'city lights bokeh in background, dreamy light circles'}
+]},
+{id:'lighting',title:'🌙 Время и освещение',mode:'s',tags:[
+{l:'Ночь + неон',p:'nighttime, vibrant neon lighting, colorful reflections on wet pavement'},
+{l:'Синий час (вечер)',p:'evening blue hour, deep blue sky, warm streetlights contrasting'},
+{l:'Золотой час (закат)',p:'golden hour, warm sunset glow, long dramatic shadows'},
+{l:'Поздняя ночь (тёмная)',p:'late night, dark moody shadows, sparse dim lighting, noir feeling'},
+{l:'Пасмурный день',p:'overcast day, soft diffused flat lighting, grey sky'},
+{l:'Дождливая ночь',p:'rainy night, wet neon reflections in puddles, misty atmosphere, glow'},
+{l:'Рассвет',p:'early dawn light, pink and orange sky, empty quiet streets'},
+{l:'Контровой свет',p:'dramatic backlight, rim lighting, silhouette edges glowing'}
+]},
+{id:'params',title:'⚙️ Параметры Midjourney / SD',mode:'m',tags:[
+{l:'--ar 2:3 (вертикаль)',p:'--ar 2:3'},
+{l:'--ar 3:4',p:'--ar 3:4'},
+{l:'--ar 9:16 (сторис)',p:'--ar 9:16'},
+{l:'--ar 1:1 (квадрат)',p:'--ar 1:1'},
+{l:'--ar 16:9 (широкий)',p:'--ar 16:9'},
+{l:'--v 6',p:'--v 6'},
+{l:'--v 6.1',p:'--v 6.1'},
+{l:'--style raw',p:'--style raw'},
+{l:'--q 2 (качество)',p:'--q 2'},
+{l:'--s 250 (стилизация)',p:'--s 250'},
+{l:'--s 750',p:'--s 750'}
+]}
+];
+
+const PRESETS=[
+{l:'🌃 Casual ночь Kabukicho',s:{camera:['iPhone 15 Pro'],shot:['По колено (ковбойский)'],quality:['Фотореализм','Без AI-артефактов','Текстура кожи'],age:['20–25 лет'],body:['Стройная / худая'],hair:['Длинные прямые чёрные'],makeup:['Естественный / нюд'],expression:['Лёгкая улыбка','Смотрит в камеру'],clothing:['Джинсовая куртка','Мини-юбка'],shoes:['Белые кроссовки'],accessories:['Маленькая сумка'],pose:['Стоит расслабленно'],location:['Kabukicho (неоновые переулки)'],lighting:['Ночь + неон'],params:['--ar 2:3 (вертикаль)','--v 6','--style raw']}},
+{l:'🌸 Девушка в парке',s:{camera:['Canon 85mm f/1.4'],shot:['В полный рост'],quality:['Фотореализм','Гиперреализм','8K UHD'],age:['20–25 лет'],body:['Миниатюрная'],hair:['Прямые с чёлкой'],makeup:['K-beauty / стеклянная кожа'],expression:['Задумчивое','Смотрит в сторону'],clothing:['Оверсайз свитер','Юбка в клетку'],shoes:['Чёрные ботинки'],accessories:['Белые носочки'],pose:['Облокотилась на стену'],location:['Okubo Park (тёмный парк)'],lighting:['Синий час (вечер)'],scene:['Одинокая фигура'],params:['--ar 2:3 (вертикаль)','--v 6','--style raw']}},
+{l:'🔥 Дерзкая в переулке',s:{camera:['Sony A7III 35mm'],shot:['По пояс'],quality:['Фотореализм','Зернистость плёнки','Кинематографично'],age:['25–30 лет'],body:['С формами (песочные часы)'],hair:['Волнистые длинные'],makeup:['Яркий (красная помада)'],expression:['Дерзкое / провокационное','Смотрит в камеру'],clothing:['Кожаная куртка','Леггинсы','Бюстье / корсет'],shoes:['Высокие каблуки'],accessories:['Чокер'],pose:['Руки скрещены'],location:['Тихий задний переулок'],lighting:['Поздняя ночь (тёмная)'],scene:['Тени и контраст'],params:['--ar 2:3 (вертикаль)','--v 6.1','--style raw']}},
+{l:'📱 Снэпшот на iPhone',s:{camera:['iPhone 15 Pro'],shot:['По грудь'],quality:['Фотореализм','RAW фото'],age:['18–20 лет'],body:['Миниатюрная'],hair:['Каре (боб)'],makeup:['K-beauty / стеклянная кожа'],expression:['Игривое','Смотрит в камеру'],clothing:['Белая футболка','Мини-юбка'],shoes:['Белые кроссовки'],accessories:['Телефон в руке'],pose:['Поправляет волосы'],location:['Неоновая улица Токио'],lighting:['Ночь + неон'],params:['--ar 3:4','--v 6','--style raw']}},
+{l:'🌧️ Дождливый вечер',s:{camera:['Плёнка Cinestill'],shot:['В полный рост'],quality:['Фотореализм','Зернистость плёнки','Высокая детализация'],age:['25–30 лет'],body:['Средняя / обычная'],hair:['Распущенные за плечи'],makeup:['Естественный / нюд'],expression:['Грустное / меланхолия','Смотрит вниз'],clothing:['Тренч','Широкие брюки'],shoes:['Чёрные ботинки'],accessories:['Маленькая сумка'],pose:['Идёт (на ходу)'],location:['Неоновая улица Токио'],lighting:['Дождливая ночь'],scene:['Мокрый асфальт','Отражения неона','Одинокая фигура'],params:['--ar 2:3 (вертикаль)','--v 6','--style raw']}},
+{l:'🎌 Портрет крупный план',s:{camera:['Canon 85mm f/1.4'],shot:['Крупный план лица'],quality:['Гиперреализм','Текстура кожи','Красивое боке','Резкий фокус'],age:['20–25 лет'],body:[],hair:['Распущенные за плечи'],makeup:['Смоки айс'],expression:['Уверенное','Смотрит в камеру','Прикрытые глаза'],clothing:[],shoes:[],accessories:['Серьги'],pose:[],location:['Kabukicho (неоновые переулки)'],lighting:['Ночь + неон'],scene:['Боке огней на фоне'],params:['--ar 3:4','--v 6.1','--style raw']}},
+{l:'🛹 Спортивная casual',s:{camera:['Fujifilm X-T5'],shot:['По колено (ковбойский)'],quality:['Фотореализм','RAW фото'],age:['18–20 лет'],body:['Спортивная / подтянутая'],hair:['Хвост'],makeup:['Без макияжа'],expression:['Уверенное','Смотрит в сторону'],clothing:['Кроп-топ','Шорты','Бомбер'],shoes:['Кеды Converse'],accessories:['Наушники','Кепка'],pose:['Сидит на корточках'],location:['Конбини (7-Eleven)'],lighting:['Ночь + неон'],params:['--ar 2:3 (вертикаль)','--v 6','--style raw']}}
+];
+
+const state={};
+S.forEach(s=>state[s.id]=new Set);
+
+function init(){
+const m=document.getElementById('main');
+let h='<div class="section"><div class="section-header"><span class="section-title">⚡ Быстрые пресеты</span></div><div class="presets-wrap">';
+PRESETS.forEach((p,i)=>h+=`<button class="preset" onclick="applyPreset(${i})">${p.l}</button>`);
+h+='</div></div>';
+S.forEach(sec=>{
+h+=`<div class="section"><div class="section-header"><span class="section-title">${sec.title}</span><span class="section-badge">${sec.mode==='s'?'один':'несколько'}</span></div><div class="tags" id="tags_${sec.id}">`;
+sec.tags.forEach((t,i)=>h+=`<div class="tag" id="t_${sec.id}_${i}" title="${t.p}" onclick="toggle('${sec.id}',${i})">${t.l}</div>`);
+h+='</div></div>'});
+h+=`<div class="section"><div class="section-header"><span class="section-title">✏️ Свой текст (на английском)</span></div><textarea class="custom-input" id="customInput" placeholder="Добавь свои детали к промпту…" oninput="build()"></textarea></div>`;
+m.innerHTML=h;
+}
+
+function toggle(sid,i){
+const sec=S.find(s=>s.id===sid);
+if(sec.mode==='s'){
+if(state[sid].has(i)){state[sid].clear()}
+else{state[sid].clear();state[sid].add(i)}
+sec.tags.forEach((_,j)=>{
+const el=document.getElementById('t_'+sid+'_'+j);
+if(el)el.classList.toggle('on',state[sid].has(j))})
+}else{
+if(state[sid].has(i))state[sid].delete(i);else state[sid].add(i);
+document.getElementById('t_'+sid+'_'+i).classList.toggle('on',state[sid].has(i))
+}
+build()
+}
+
+function getP(sid){
+const sec=S.find(s=>s.id===sid);
+return[...state[sid]].sort((a,b)=>a-b).map(i=>sec.tags[i].p)
+}
+
+function build(){
+const parts=[];
+const q=[...getP('quality'),...getP('camera'),...getP('shot')];
+if(q.length)parts.push(q.join(', '));
+const subj=[...getP('age'),...getP('body'),...getP('hair'),...getP('makeup'),...getP('expression')];
+if(subj.length)parts.push(subj.join(', '));
+const cl=[...getP('clothing'),...getP('shoes'),...getP('accessories')];
+if(cl.length)parts.push('wearing '+cl.join(', '));
+const po=getP('pose');
+if(po.length)parts.push(po.join(', '));
+const env=[...getP('location'),...getP('scene'),...getP('lighting')];
+if(env.length)parts.push(env.join(', '));
+const custom=(document.getElementById('customInput')||{}).value||'';
+if(custom.trim())parts.push(custom.trim());
+let prompt=parts.join(' -- ');
+const par=getP('params');
+if(par.length)prompt+=' '+par.join(' ');
+const el=document.getElementById('promptText');
+const cc=document.getElementById('charCount');
+if(prompt){
+el.innerHTML=prompt.replace(/ -- /g,' <span class="sep">--</span> ');
+el.dataset.raw=prompt;
+cc.textContent=prompt.length+' символов'
+}else{
+el.innerHTML='<span class="prompt-empty">← Выбери теги ниже чтобы собрать промпт…</span>';
+el.dataset.raw='';
+cc.textContent=''
+}
+}
+
+function applyPreset(idx){
+resetAll(true);
+const p=PRESETS[idx];
+for(const[sid,labels]of Object.entries(p.s)){
+const sec=S.find(s=>s.id===sid);
+if(!sec)continue;
+labels.forEach(label=>{
+const ti=sec.tags.findIndex(t=>t.l===label);
+if(ti!==-1){state[sid].add(ti);const el=document.getElementById('t_'+sid+'_'+ti);if(el)el.classList.add('on')}
+})}
+build();
+toast('⚡ Пресет применён!')
+}
+
+function resetAll(silent){
+S.forEach(sec=>{
+state[sec.id].clear();
+sec.tags.forEach((_,i)=>{const el=document.getElementById('t_'+sec.id+'_'+i);if(el)el.classList.remove('on')})
+});
+const ci=document.getElementById('customInput');if(ci)ci.value='';
+build();
+if(!silent)toast('🗑️ Всё сброшено')
+}
+
+function copyPrompt(){
+const raw=(document.getElementById('promptText').dataset.raw||'').trim();
+if(!raw){toast('⚠️ Промпт пустой!');return}
+navigator.clipboard.writeText(raw).then(()=>toast('✅ Скопировано!')).catch(()=>{
+const ta=document.createElement('textarea');ta.value=raw;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('✅ Скопировано!')
+})
+}
+
+function randomize(){
+resetAll(true);
+S.forEach(sec=>{
+if(sec.id==='params')return;
+const count=sec.mode==='s'?1:Math.floor(Math.random()*3)+1;
+const indices=[...Array(sec.tags.length).keys()];
+for(let i=indices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[indices[i],indices[j]]=[indices[j],indices[i]]}
+const pick=indices.slice(0,Math.min(count,indices.length));
+pick.forEach(i=>{state[sec.id].add(i);const el=document.getElementById('t_'+sec.id+'_'+i);if(el)el.classList.add('on')});
+});
+['--ar 2:3 (вертикаль)','--v 6','--style raw'].forEach(l=>{
+const sec=S.find(s=>s.id==='params');
+const ti=sec.tags.findIndex(t=>t.l===l);
+if(ti!==-1){state.params.add(ti);const el=document.getElementById('t_params_'+ti);if(el)el.classList.add('on')}
+});
+build();
+toast('🎲 Случайный промпт!')
+}
+
+let toastTimer;
+function toast(msg){
+const t=document.getElementById('toast');
+t.textContent=msg;t.classList.add('show');
+clearTimeout(toastTimer);
+toastTimer=setTimeout(()=>t.classList.remove('show'),1800)
+}
+
+init();
+</script>
+</body>
+</html>
