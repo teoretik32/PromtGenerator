@@ -126,3 +126,31 @@ body {
   .header h1 { font-size: 1.5rem; }
   .btn { padding: 7px 8px; font-size: .76rem; }
 }
+
+.tools-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.search-input {
+  flex: 1;
+  min-width: 220px;
+  background: #10152a;
+  border: 1px solid #2d365b;
+  border-radius: 8px;
+  color: #dee3ff;
+  padding: 8px 10px;
+}
+.btn-balance { background: #27413a; border-color: #4d9f8a; }
+.tag.hidden { display: none; }
+
+.quality-panel {
+  margin-top: 10px;
+  border: 1px solid #2d365b;
+  border-radius: 10px;
+  padding: 10px;
+  background: #0d1328;
+  font-size: .86rem;
+}
+.quality-panel .quality-head { font-weight: 600; margin-bottom: 8px; }
+.quality-panel ul { padding-left: 18px; color: #d3dafd; }
+.quality-panel.good { border-color: #2f8b65; }
+.quality-panel.mid { border-color: #9d7a38; }
+.quality-panel.bad { border-color: #8b3d4f; }
+.quality-ok { color: #9fe7c8; }
