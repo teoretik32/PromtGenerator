@@ -15,7 +15,7 @@
   <section class="prompt-output">
     <div class="prompt-bar">
       <div>
-        <div class="prompt-label">Текстовый промпт</div>
+        <div class="prompt-label">Результат генерации</div>
         <div id="charCount" class="char-count"></div>
       </div>
       <div class="prompt-actions">
@@ -25,12 +25,19 @@
         <button class="btn btn-json" onclick="copyJson()">🧾 Копировать JSON</button>
       </div>
     </div>
-    <div id="promptText" class="prompt-text"></div>
+
+    <div class="output-grid">
+      <article class="output-card">
+        <h2 class="output-title">Текстовый промпт</h2>
+        <div id="promptText" class="prompt-text"></div>
+      </article>
+      <article class="output-card">
+        <h2 class="output-title">JSON-структура</h2>
+        <pre id="jsonOutput" class="json-output"></pre>
+      </article>
+    </div>
+
     <div id="qualityPanel" class="quality-panel"></div>
-    <details class="json-box" open>
-      <summary>JSON-структура</summary>
-      <pre id="jsonOutput"></pre>
-    </details>
   </section>
 
   <main id="main" class="main"></main>
